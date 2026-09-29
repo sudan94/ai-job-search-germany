@@ -1,0 +1,34 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: job-portal-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # The SQLite file lives on the named volume, not in the image.
+      DATABASE_URL: sqlite:////data/job_portal.db
+      TIMEZONE: ${TIMEZONE:-Europe/Berlin}
+      # In a container the process is always on, so the in-process timer works.
+      ENABLE_SCHEDULER: ${ENABLE_SCHEDULER:-true}
+      CATCH_UP_ON_STARTUP: ${CATCH_UP_ON_STARTUP:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+    volumes:
+      - job-data:/data
+    ports:
+      # Exposed so you can hit the API and /docs directly.
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: job-portal-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+volumes:
+  job-data:
